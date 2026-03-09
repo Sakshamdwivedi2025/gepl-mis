@@ -1339,6 +1339,8 @@ body.project-open {
 .styled-table td {
   padding: 12px;
   border-bottom: 1px solid #3d434f;
+  font-size: 12px;
+  text-align: left;
 }
 
 .styled-table th {

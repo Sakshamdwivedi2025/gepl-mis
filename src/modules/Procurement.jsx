@@ -213,7 +213,7 @@ export default function Procurement() {
                 <td>{row.excessQty}</td>
                 <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : "-"}</td>
                 <td>{row.updatedAt ? new Date(row.updatedAt).toLocaleString() : "-"}</td>
-                <td>
+                <td className="action-cell">
                   <button onClick={() => editRow(i)}>Edit</button>
                   <button
                     style={{ marginLeft: 6 }}

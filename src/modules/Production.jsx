@@ -6,7 +6,7 @@ import {
 } from "../services/productionService";
 
 const PAGE_SIZE = 10;
-const BASE_URL = "http://192.168.29.68:8080";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function authHeaders() {
   const token = localStorage.getItem("token");
@@ -241,7 +241,7 @@ export default function Production() {
                     ? new Date(p.updatedAt).toLocaleString()
                     : "-"}
                 </td>
-                <td>
+                <td className="action-cell">
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => startProduction(p.id)}>Start</button>
 

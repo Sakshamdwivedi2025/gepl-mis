@@ -261,74 +261,76 @@ export default function Receivables() {
 
       {/* ================= TABLE ================= */}
       <div className="card table-card">
-        <table className="styled-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Client</th>
-              <th>Project</th>
-              <th>Invoice</th>
-              <th>Invoice Date</th>
-              <th>Due Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Created At</th>
-              <th>Created By</th>
-              <th>Updated At</th>
-              <th>TDS Applicable</th>
-              <th>TDS Rate</th>
-              <th>TDS Description</th>
-              <th>Received Amount</th>
-              <th>TDS Amount</th>
-              <th>Net Amount</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filtered.map(r => (
-              <tr key={r.id}>
-                <td>{r.id}</td>
-                <td>{r.clientName}</td>
-                <td>{r.projectId ?? "-"}</td>
-                <td>{r.invoiceNo}</td>
-                <td>{r.invoiceDate}</td>
-                <td>{r.dueDate || "-"}</td>
-                <td>₹{r.invoiceAmount}</td>
-                <td>
-                  <span className={getStatusClass(r.status)}>
-                    {r.status}
-                  </span>
-                </td>
-                <td>{r.createdAt || "-"}</td>
-                <td>{r.createdBy || "-"}</td>
-                <td>{r.updatedAt || "-"}</td>
-                <td>{r.tdsApplicable ? "YES" : "NO"}</td>
-                <td>{r.tdsRate || "-"}</td>
-                <td>{r.tdsDescription || "-"}</td>
-                <td>₹{r.receivedAmount || 0}</td>
-                <td>₹{r.tdsAmount || 0}</td>
-                <td>₹{r.netAmount || 0}</td>
-                <td>
-                  <button
-                    disabled={r.status === "PAID"}
-                    onClick={() => {
-                      setSelectedReceivable(r);
-                      setPaymentForm({
-                        paymentDate: "",
-                        amount: r.invoiceAmount
-                      });
-                      setPaymentMode(true);
-                    }}
-                  >
-                    {r.status === "PAID" ? "Paid" : "Receive Payment"}
-                  </button>
-                </td>
-
+        <div className="table-wrapper">
+          <table className="styled-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Project</th>
+                <th>Invoice</th>
+                <th>Invoice Date</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Created By</th>
+                <th>Updated At</th>
+                <th>TDS Applicable</th>
+                <th>TDS Rate</th>
+                <th>TDS Description</th>
+                <th>Received Amount</th>
+                <th>TDS Amount</th>
+                <th>Net Amount</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.id}>
+                  <td>{r.id}</td>
+                  <td>{r.clientName}</td>
+                  <td>{r.projectId ?? "-"}</td>
+                  <td>{r.invoiceNo}</td>
+                  <td>{r.invoiceDate}</td>
+                  <td>{r.dueDate || "-"}</td>
+                  <td>₹{r.invoiceAmount}</td>
+                  <td>
+                    <span className={getStatusClass(r.status)}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td>{r.createdAt || "-"}</td>
+                  <td>{r.createdBy || "-"}</td>
+                  <td>{r.updatedAt || "-"}</td>
+                  <td>{r.tdsApplicable ? "YES" : "NO"}</td>
+                  <td>{r.tdsRate || "-"}</td>
+                  <td>{r.tdsDescription || "-"}</td>
+                  <td>₹{r.receivedAmount || 0}</td>
+                  <td>₹{r.tdsAmount || 0}</td>
+                  <td>₹{r.netAmount || 0}</td>
+                  <td className="action-cell">
+                    <button
+                      disabled={r.status === "PAID"}
+                      onClick={() => {
+                        setSelectedReceivable(r);
+                        setPaymentForm({
+                          paymentDate: "",
+                          amount: r.invoiceAmount
+                        });
+                        setPaymentMode(true);
+                      }}
+                    >
+                      {r.status === "PAID" ? "Paid" : "Receive Payment"}
+                    </button>
+                  </td>
+
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* PAGINATION */}

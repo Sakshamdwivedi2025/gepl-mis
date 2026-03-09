@@ -1,6 +1,4 @@
-
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-
 function authHeaders() {
   const token = localStorage.getItem("token");
   return {
