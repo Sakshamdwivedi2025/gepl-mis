@@ -18,7 +18,6 @@ import Production from "./modules/Production";
 import QC from "./modules/QC";
 import Procurement from "./modules/Procurement";
 import Projects from "./modules/Projects";
-// import VendorScorecard from "./modules/VendorScorecard";
 
 /* ================= TOKEN DECODER ================= */
 function decodeToken() {
@@ -172,7 +171,7 @@ export default function App() {
       content = <VendorScorecard />;
       break;
     case "dashboard":
-      content = <Dashboard user={user} onLogout={logout} />;
+      content = <Dashboard user={user} onLogout={logout} setPage={setPage} />;
       break;
     default:
       content = null;

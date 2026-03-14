@@ -1,266 +1,134 @@
 import Pagination from "../layout/Pagination";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import {
-  getQCRecords,
-  addQCRecord,
-  finishQC
-} from "../services/qcService";
+import { getQCRecords, addQCRecord, finishQC } from "../services/qcService";
 
 const PAGE_SIZE = 10;
+const IcoPlus  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>;
+const IcoCheck = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>;
+const IcoFlag  = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
 
 export default function QC() {
-  const { productionOrderId } = useParams();
-
-  /* ================= STATE ================= */
-  const [data, setData] = useState([]);
-  const [page, setPage] = useState(1);
+  const [data, setData]             = useState([]);
+  const [page, setPage]             = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [form, setForm] = useState({ productionOrderId: "", inspectedQty: "", acceptedQty: "", reworkQty: "", scrapQty: "", remarks: "" });
 
-  /* ================= FORM ================= */
-  const [form, setForm] = useState({
-    productionOrderId: "",
-    projectId: "",
-    inspectedQty: "",
-    acceptedQty: "",
-    reworkQty: "",
-    scrapQty: "",
-    remarks: ""
-  });
-
-  /* ================= LOAD ================= */
-  useEffect(() => {
-    loadQC();
-  }, [page, productionOrderId]);
+  useEffect(() => { loadQC(); }, [page]);
 
   async function loadQC() {
     try {
-      const res = await getQCRecords(page - 1, PAGE_SIZE); // backend is 0-based
-      setData(res.content || []);
-      setTotalPages(res.totalPages || 1);
-    } catch (err) {
-      console.error(err);
-      setData([]);
-    }
+      const res = await getQCRecords(page - 1, PAGE_SIZE);
+      setData(res.content || []); setTotalPages(res.totalPages || 1);
+    } catch { setData([]); }
   }
 
-  /* ================= ADD QC ================= */
   async function submitQC() {
-    if (!form.productionOrderId) {
-      alert("Production Order ID is required");
-      return;
-    }
-
-    const payload = {
-      inspectedQty: Number(form.inspectedQty),
-      acceptedQty: Number(form.acceptedQty),
-      reworkQty: Number(form.reworkQty),
-      scrapQty: Number(form.scrapQty),
-      remarks: form.remarks
-    };
-
+    if (!form.productionOrderId) { alert("Production Order ID is required"); return; }
     try {
-      await addQCRecord(payload, Number(form.productionOrderId));
-      alert("QC record added successfully");
-      resetForm();
-      loadQC();
-    } catch (err) {
-      alert(err.message);
-    }
+      await addQCRecord({ inspectedQty: Number(form.inspectedQty), acceptedQty: Number(form.acceptedQty), reworkQty: Number(form.reworkQty), scrapQty: Number(form.scrapQty), remarks: form.remarks }, Number(form.productionOrderId));
+      setForm({ productionOrderId: "", inspectedQty: "", acceptedQty: "", reworkQty: "", scrapQty: "", remarks: "" }); loadQC();
+    } catch (err) { alert(err.message); }
   }
 
-  function resetForm() {
-    setForm({
-      productionOrderId: "",
-      projectId: "",
-      inspectedQty: "",
-      acceptedQty: "",
-      reworkQty: "",
-      scrapQty: "",
-      remarks: ""
-    });
+  async function handleFinish(id) {
+    if (!window.confirm("Mark this QC record as FINISHED?")) return;
+    try { await finishQC(id); loadQC(); } catch (err) { alert(err.message || "Failed"); }
   }
 
-  /* ================= FINISH QC ================= */
-  async function handleFinishQC(qcId) {
-    if (!window.confirm("Mark this QC as FINISHED?")) return;
+  const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
-    try {
-      await finishQC(qcId);
-      alert("QC marked as FINISHED");
-      loadQC();
-    } catch (err) {
-      alert(err.message || "Failed to finish QC");
-    }
-  }
+  // yield rate helper
+  const yieldRate = row => {
+    const ins = Number(row.inspectedQty || 0);
+    const acc = Number(row.acceptedQty  || 0);
+    return ins > 0 ? Math.round((acc / ins) * 100) : 0;
+  };
 
-  function getQCStatusClass(status = "") {
-    const s = status.toUpperCase();
-
-    if (s === "FINISHED" || s === "COMPLETED")
-      return "status-badge paid";   // green
-
-    return "status-badge open";     // default grey
-  }
-
-
-  /* ================= UI ================= */
   return (
-    <div className="module">
-      <h2>Quality Control (QC)</h2>
-
-      {/* ================= FORM ================= */}
-      <div className="card form-card">
-        <h3>Add QC Record</h3>
-
-        <div className="date-field">
-          <label>Production Order ID</label>
-          <input
-            type="number"
-            value={form.productionOrderId}
-            placeholder="0"
-            onChange={e =>
-              setForm({ ...form, productionOrderId: e.target.value })
-            }
-          />
+    <div className="mod-page">
+      <div className="mod-header">
+        <div className="mod-header-left">
+          <h2 className="mod-title">Quality Control</h2>
+          <p className="mod-subtitle">Inspection records, yield tracking, and QC status management</p>
         </div>
-
-        <div className="date-field">
-          <label>Inspected Qty</label>
-          <input
-            type="number"
-            value={form.inspectedQty}
-            placeholder="0"
-            onChange={e =>
-              setForm({ ...form, inspectedQty: e.target.value })
-            }
-          />
-        </div>
-
-        <div className="date-field">
-          <label>Accepted Qty</label>
-          <input
-            type="number"
-            value={form.acceptedQty}
-            placeholder="0"
-            onChange={e =>
-              setForm({ ...form, acceptedQty: e.target.value })
-            }
-          />
-        </div>
-
-        <div className="date-field">
-          <label>Rework Qty</label>
-          <input
-            type="number"
-            placeholder="0"
-            value={form.reworkQty}
-            onChange={e =>
-              setForm({ ...form, reworkQty: e.target.value })
-            }
-          />
-        </div>
-
-        <div className="date-field">
-          <label>Scrap Qty</label>
-          <input
-            type="number"
-            value={form.scrapQty}
-            placeholder="0"
-            onChange={e =>
-              setForm({ ...form, scrapQty: e.target.value })
-            }
-          />
-        </div>
-
-        <div className="date-field">
-          <label>Remarks</label>
-          <input
-            value={form.remarks}
-            placeholder="XYZ.."
-            onChange={e =>
-              setForm({ ...form, remarks: e.target.value })
-            }
-          />
-        </div>
-
-        <button onClick={submitQC}>Add QC</button>
+        <span className="mod-count-badge">{data.length} records</span>
       </div>
 
-      {/* ================= TABLE ================= */}
-      <div className="card table-card">
-        <div className="table-scroll"><table className="styled-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Production Order ID</th>
-              <th>Project ID</th>
-              <th>Inspected</th>
-              <th>Accepted</th>
-              <th>Rework</th>
-              <th>Scrap</th>
-              <th>Created At</th>
-              <th>Updated At</th>
-              {/* <th>Status</th> */}
-              <th>Remarks</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {data.length > 0 ? (
-              data.map(qc => (
-                <tr key={qc.id}>
-                  <td>{qc.id}</td>
-                  <td>{qc.productionOrderId}</td>
-                  <td>{qc.projectId || "-"}</td>
-                  <td>{qc.inspectedQty}</td>
-                  <td>{qc.acceptedQty}</td>
-                  <td>{qc.reworkQty}</td>
-                  <td>{qc.scrapQty}</td>
-                  <td>{qc.createdAt || "-"}</td>
-                  <td>{qc.updatedAt || "-"}</td>
-                  {/* <td>
-                    <span className={getQCStatusClass(qc.status)}>
-                      {qc.status}
-                    </span>
-                  </td> */}
-
-                  <td>{qc.remarks || "-"}</td>
-                  <td>
-                    {qc.status === "FINISHED" ? (
-                      <span className="qc-finished-badge">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{flexShrink:0}}>
-                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        Finished
-                      </span>
-                    ) : (
-                      <button
-                        className="btn-finish"
-                        onClick={() => handleFinishQC(qc.id)}
-                      >
-                        Finish
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="12">No QC records</td>
-              </tr>
-            )}
-          </tbody>
-        </table></div>
+      <div className="mod-form-panel">
+        <div className="mod-form-header">
+          <h3 className="mod-form-title">
+            <span className="mod-form-icon" style={{ background: "rgba(168,85,247,0.1)", color: "var(--purple)" }}><IcoPlus /></span>
+            Add QC Record
+          </h3>
+        </div>
+        <div className="mod-form-body">
+          <div className="mod-field">
+            <label className="mod-label">Production Order ID</label>
+            <input className="mod-input" type="number" placeholder="0" value={form.productionOrderId} onChange={e => set("productionOrderId", e.target.value)} />
+          </div>
+          {[["Inspected Qty","inspectedQty"],["Accepted Qty","acceptedQty"],["Rework Qty","reworkQty"],["Scrap Qty","scrapQty"]].map(([lbl,key]) => (
+            <div key={key} className="mod-field">
+              <label className="mod-label">{lbl}</label>
+              <input className="mod-input" type="number" placeholder="0" value={form[key]} onChange={e => set(key, e.target.value)} />
+            </div>
+          ))}
+          <div className="mod-field">
+            <label className="mod-label">Remarks</label>
+            <input className="mod-input" placeholder="Inspection notes…" value={form.remarks} onChange={e => set("remarks", e.target.value)} />
+          </div>
+          <button className="mod-submit-btn" style={{ background: "linear-gradient(135deg,var(--purple),#7c3aed)", boxShadow: "0 3px 10px var(--purple-soft)" }} onClick={submitQC}><IcoPlus /> Add QC</button>
+        </div>
       </div>
 
-      {/* ================= PAGINATION ================= */}
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <div className="mod-table-panel">
+        <div className="mod-table-header"><span className="mod-table-title">QC Records</span></div>
+        <div className="table-scroll">
+          <table className="mod-table">
+            <thead><tr>
+              <th>ID</th><th>Prod. Order</th><th>Project</th>
+              <th>Inspected</th><th>Accepted</th><th>Rework</th><th>Scrap</th>
+              <th>Yield %</th><th>Status</th><th>Remarks</th>
+              <th>Created At</th><th>Updated At</th><th>Action</th>
+            </tr></thead>
+            <tbody>
+              {data.length > 0 ? data.map(qc => {
+                const yr = yieldRate(qc);
+                const yColor = yr >= 90 ? "var(--success)" : yr >= 70 ? "var(--warning)" : "var(--danger)";
+                return (
+                  <tr key={qc.id}>
+                    <td className="mod-td-id">#{qc.id}</td>
+                    <td style={{ color: "var(--teal)", fontWeight: 600 }}>{qc.productionOrderId}</td>
+                    <td style={{ color: "var(--text-muted)" }}>{qc.projectId || "—"}</td>
+                    <td><strong>{qc.inspectedQty}</strong></td>
+                    <td style={{ color: "var(--success)", fontWeight: 600 }}>{qc.acceptedQty}</td>
+                    <td style={{ color: "var(--warning)" }}>{qc.reworkQty}</td>
+                    <td style={{ color: "var(--danger)" }}>{qc.scrapQty}</td>
+                    <td>
+                      <span style={{ color: yColor, fontWeight: 700, fontSize: 13 }}>{yr}%</span>
+                    </td>
+                    <td>
+                      {qc.status === "FINISHED"
+                        ? <span className="mod-badge mod-badge--finished">✓ Finished</span>
+                        : <span className="mod-badge mod-badge--inprogress">In Progress</span>
+                      }
+                    </td>
+                    <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{qc.remarks || "—"}</td>
+                    <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{qc.createdAt || "—"}</td>
+                    <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{qc.updatedAt || "—"}</td>
+                    <td>
+                      {qc.status === "FINISHED"
+                        ? <span className="mod-finished-badge"><IcoCheck /> Finished</span>
+                        : <button className="mod-btn-action" style={{ background: "var(--purple-soft)", color: "var(--purple)", borderColor: "rgba(168,85,247,0.25)" }} onClick={() => handleFinish(qc.id)}><IcoFlag /> Finish</button>
+                      }
+                    </td>
+                  </tr>
+                );
+              }) : <tr className="mod-empty-row"><td colSpan="13">No QC records</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }
