@@ -4,7 +4,7 @@ import { getProduction, addProduction as addProductionApi, updateProduction } fr
 import { getInventory, updateInventoryItem } from "../services/inventoryService";
 
 const PAGE_SIZE = 10;
-const BASE_URL = "http://192.168.29.68:8080";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 function authHeaders() {
   const token = localStorage.getItem("token");
   return { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" };
