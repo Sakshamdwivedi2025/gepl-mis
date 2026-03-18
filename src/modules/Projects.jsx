@@ -13,6 +13,7 @@ const IcoEdit    = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="n
 const IcoView    = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>;
 const IcoBack    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>;
 const IcoClose   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>;
+const IcoRefresh = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
 
 const STATUS_COLORS = {
   PLANNED:     { bg: "var(--primary-soft)", color: "var(--primary)",   border: "rgba(59,130,246,0.2)"  },
@@ -53,30 +54,46 @@ function ProjectDetail({ project, onClose }) {
     try { return JSON.parse(localStorage.getItem("prod_consume_log") || "{}"); } catch { return {}; }
   })();
 
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+
+  // expose manual refresh
+  async function fetchAll(showLoader = false) {
+    if (showLoader) setLoading(true);
+    try {
+      const [rec, pay, cash, prod] = await Promise.allSettled([
+        getReceivables(0, 200),
+        getPayables(0, 200),
+        getCashTransactions(0, 200),
+        getProduction(0, 200),
+      ]);
+
+      const recList  = (rec.value?.content  || []).filter(r => String(r.projectId) === String(pid));
+      const payList  = (pay.value?.content  || []).filter(p => String(p.projectId) === String(pid));
+      const cashList = (cash.value?.content || []).filter(c => String(c.projectId) === String(pid));
+      const prodList = (prod.value?.content || []).filter(p => String(p.projectId) === String(pid));
+
+      setReceivables(recList);
+      setPayables(payList);
+      setCashTxns(cashList);
+      setProdOrders(prodList);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }
+
+  // initial load
+  useEffect(() => { fetchAll(true); }, [pid]);
+
+  // auto-refresh every 30s while dashboard is open
   useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
-      try {
-        const [rec, pay, cash, prod] = await Promise.allSettled([
-          getReceivables(0, 200),
-          getPayables(0, 200),
-          getCashTransactions(0, 200),
-          getProduction(0, 200),
-        ]);
+    const timer = setInterval(() => fetchAll(false), 30000);
+    return () => clearInterval(timer);
+  }, [pid]);
 
-        const recList  = (rec.value?.content  || []).filter(r => String(r.projectId) === String(pid));
-        const payList  = (pay.value?.content  || []).filter(p => String(p.projectId) === String(pid));
-        const cashList = (cash.value?.content || []).filter(c => String(c.projectId) === String(pid));
-        const prodList = (prod.value?.content || []).filter(p => String(p.projectId) === String(pid));
-
-        setReceivables(recList);
-        setPayables(payList);
-        setCashTxns(cashList);
-        setProdOrders(prodList);
-      } catch { /* ignore */ }
-      finally { setLoading(false); }
-    }
-    fetchAll();
+  // refresh when tab regains focus (user added data in another tab/module)
+  useEffect(() => {
+    const onFocus = () => fetchAll(false);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [pid]);
 
   // ── derived KPIs ──
@@ -111,7 +128,8 @@ function ProjectDetail({ project, onClose }) {
   }, {});
 
   const budget    = Number(project.plannedBudget || 0);
-  const budgetUsed = totalPayable + cashOut;
+  // actual spend = cash that actually left the project (same as backend uses)
+  const budgetUsed = cashOut;
   const budgetPct  = budget > 0 ? Math.min(100, Math.round((budgetUsed / budget) * 100)) : 0;
   const budgetColor = budgetPct >= 90 ? "var(--danger)" : budgetPct >= 70 ? "var(--warning)" : "var(--success)";
 
