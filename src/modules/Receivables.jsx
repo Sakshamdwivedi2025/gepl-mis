@@ -4,22 +4,22 @@ import { getReceivables, addReceivable, updateReceivable } from "../services/rec
 
 const PAGE_SIZE = 10;
 
-const IcoPlus   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>;
-const IcoCash   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 12h.01M18 12h.01"/></svg>;
+const IcoPlus = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>;
+const IcoCash = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 12h.01M18 12h.01" /></svg>;
 
 function statusBadge(status = "") {
   const s = status.toUpperCase();
-  if (s === "PAID")             return "mod-badge--paid";
-  if (s.includes("PARTIAL"))   return "mod-badge--partial";
+  if (s === "PAID") return "mod-badge--paid";
+  if (s.includes("PARTIAL")) return "mod-badge--partial";
   return "mod-badge--open";
 }
 
 export default function Receivables() {
-  const [data, setData]             = useState([]);
-  const [search, setSearch]         = useState("");
-  const [page, setPage]             = useState(1);
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [paymentMode, setPaymentMode]             = useState(false);
+  const [paymentMode, setPaymentMode] = useState(false);
   const [selectedReceivable, setSelectedReceivable] = useState(null);
   const [paymentForm, setPaymentForm] = useState({ paymentDate: "", amount: "" });
 
@@ -68,8 +68,10 @@ export default function Receivables() {
   }
 
   function resetForm() {
-    setForm({ clientName: "", projectId: "", invoiceNo: "", invoiceDate: "",
-      dueDate: "", invoiceAmount: "", tdsApplicable: "NO", tdsRate: "", tdsDescription: "" });
+    setForm({
+      clientName: "", projectId: "", invoiceNo: "", invoiceDate: "",
+      dueDate: "", invoiceAmount: "", tdsApplicable: "NO", tdsRate: "", tdsDescription: ""
+    });
   }
 
   const filtered = data.filter(r => r.clientName?.toLowerCase().includes(search.toLowerCase()));
@@ -97,15 +99,15 @@ export default function Receivables() {
           </h3>
         </div>
         <div className="mod-form-body">
-          {[["Client Name","clientName","text","e.g. Acme Corp"],["Project ID","projectId","text","—"],
-            ["Invoice No","invoiceNo","text","INV-001"],["Invoice Amount","invoiceAmount","number","0.00"]].map(([lbl,key,type,ph]) => (
+          {[["Client Name", "clientName", "text", "e.g. Acme Corp"], ["Project ID", "projectId", "text", "—"],
+          ["Invoice No", "invoiceNo", "text", "INV-001"], ["Invoice Amount", "invoiceAmount", "number", "0.00"]].map(([lbl, key, type, ph]) => (
             <div key={key} className="mod-field">
               <label className="mod-label">{lbl}</label>
               <input className="mod-input" type={type} placeholder={ph} value={f[key]}
                 onChange={e => set(key, e.target.value)} />
             </div>
           ))}
-          {[["Invoice Date","invoiceDate"],["Due Date","dueDate"]].map(([lbl,key]) => (
+          {[["Invoice Date", "invoiceDate"], ["Due Date", "dueDate"]].map(([lbl, key]) => (
             <div key={key} className="mod-field">
               <label className="mod-label">{lbl}</label>
               <input className="mod-input" type="date" value={f[key]} onChange={e => set(key, e.target.value)} />
@@ -211,10 +213,13 @@ export default function Receivables() {
                     {r.status === "PAID"
                       ? <span className="mod-finished-badge">✓ Paid</span>
                       : <button className="mod-btn-action" onClick={() => {
-                          setSelectedReceivable(r);
-                          setPaymentForm({ paymentDate: "", amount: r.invoiceAmount });
-                          setPaymentMode(true);
-                        }}><IcoCash /> Receive</button>
+                        setSelectedReceivable(r);
+                        setPaymentForm({
+                          paymentDate: "",
+                          amount: r.invoiceAmount - (r.receivedAmount || 0)
+                        });
+                        setPaymentMode(true);
+                      }}><IcoCash /> Receive</button>
                     }
                   </td>
                 </tr>

@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = "http://192.168.29.68:8080";
 /* LOGIN API */
 export async function loginApi(username, password) {
   const res = await fetch(`${BASE_URL}/api/auth/login`, {
